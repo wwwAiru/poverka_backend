@@ -6,6 +6,7 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
+import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -80,7 +81,6 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
                     return@post
                 }
 
-                call.application.log.info("Сохранение файлов для UUID $uuid.")
                 val fileDir = File("uploads/$uuid")
                 if (!fileDir.exists()) {
                     fileDir.mkdirs()
@@ -88,6 +88,7 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
 
                 poverkaService.storeFiles(uuid!!, files)
 
+                call.application.log.info("Файлы успешно сохранены для UUID $uuid.")
                 call.respond(HttpStatusCode.OK, "Файлы успешно загружены.")
             } catch (e: Exception) {
                 call.application.log.error("Ошибка при обработке загрузки: ${e.localizedMessage}", e)
@@ -101,10 +102,27 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
         val uuid = call.parameters["uuid"] ?: return@get call.respond(HttpStatusCode.BadRequest)
         val files = poverkaService.getFilesForPoverka(uuid)
 
+        if (files.isEmpty()) {
+            call.application.log.warn("Файлы для UUID $uuid не найдены.")
+            return@get call.respond(HttpStatusCode.NotFound, "Файлы не найдены.")
+        }
+
         val (thumbnails, originals) = files.partition { it.name.startsWith("thumb_") }
 
+        // Логирование содержимого
+        call.application.log.info("Thumbnails: ${thumbnails.map { it.name }}")
+        call.application.log.info("Originals: ${originals.map { it.name }}")
+
+        if (thumbnails.isEmpty() || originals.isEmpty()) {
+            call.application.log.warn("Тumbnails или Originals пустые.")
+        }
+
         call.respondHtml(HttpStatusCode.OK) {
-            renderPoverkaPage(uuid, thumbnails.map { "/uploads}/thumb_${it.name}" }, originals.map { "/uploads}/${it.name}" })
+            renderPoverkaPage(
+                uuid,
+                thumbnails.map { it.name },
+                originals.map { it.name }
+            )
         }
     }
 }
