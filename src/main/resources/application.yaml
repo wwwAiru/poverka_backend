@@ -1,0 +1,8 @@
+application:
+    modules:
+        - com.poverka.Application.module
+deployment:
+    port: 8080
+server:
+    address: "0.0.0.0"
+    uploadDir: "/uploads"
