@@ -104,7 +104,7 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
         val (thumbnails, originals) = files.partition { it.name.startsWith("thumb_") }
 
         call.respondHtml(HttpStatusCode.OK) {
-            renderPoverkaPage(uuid, thumbnails.map { "/static/${uuid}/${it.name}" }, originals.map { "/static/${uuid}/${it.name}" })
+            renderPoverkaPage(uuid, thumbnails.map { "/uploads}/thumb_${it.name}" }, originals.map { "/uploads}/${it.name}" })
         }
     }
 }
