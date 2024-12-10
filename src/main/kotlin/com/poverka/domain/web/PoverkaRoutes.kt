@@ -6,7 +6,6 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
-import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -97,6 +96,28 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
         }
     }
 
+    // Получение списка файлов для сравнения
+    post("/files") {
+        try {
+            val receivedUuids = call.receive<Set<String>>()
+            if (receivedUuids.isEmpty()) {
+                call.respond(HttpStatusCode.BadRequest, "Список UUID пуст.")
+                return@post
+            }
+
+            call.application.log.info("Получены UUID: $receivedUuids")
+
+            val filesMetadata = poverkaService.getServerFileMetadata(receivedUuids)
+
+            call.respond(HttpStatusCode.OK, filesMetadata)
+        } catch (e: Exception) {
+            call.application.log.error("Ошибка при обработке запроса: ${e.localizedMessage}", e)
+            call.respond(HttpStatusCode.InternalServerError, "Ошибка на сервере.")
+        }
+    }
+
+
+
     // Получение файлов
     get("/{uuid}") {
         val uuid = call.parameters["uuid"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -109,7 +130,6 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
 
         val (thumbnails, originals) = files.partition { it.name.startsWith("thumb_") }
 
-        // Логирование содержимого
         call.application.log.info("Thumbnails: ${thumbnails.map { it.name }}")
         call.application.log.info("Originals: ${originals.map { it.name }}")
 
