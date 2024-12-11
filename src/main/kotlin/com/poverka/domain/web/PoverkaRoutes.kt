@@ -117,9 +117,8 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
     }
 
 
-
     // Получение файлов
-    get("/{uuid}") {
+    get("/gallery/{uuid}") {
         val uuid = call.parameters["uuid"] ?: return@get call.respond(HttpStatusCode.BadRequest)
         val files = poverkaService.getFilesForPoverka(uuid)
 
@@ -144,5 +143,9 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
                 originals.map { it.name }
             )
         }
+    }
+
+    get("/ping") {
+        call.respondText("OK", status = HttpStatusCode.OK)
     }
 }
