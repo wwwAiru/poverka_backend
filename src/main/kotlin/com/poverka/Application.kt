@@ -20,10 +20,10 @@ fun Application.module() {
         json()
     }
 
-    val fileStorage = StorageService(File("uploads"))
-    val poverkaService = PoverkaService(fileStorage)
+    val storageService = StorageService(File("uploads"))
+    val poverkaService = PoverkaService(storageService)
 
     routing {
-        poverkaRoutes(poverkaService)
+        poverkaRoutes(poverkaService, storageService)
     }
 }

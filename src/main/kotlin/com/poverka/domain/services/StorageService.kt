@@ -12,12 +12,8 @@ class StorageService(private val storageDir: File) {
         }
     }
 
-    // Публичный геттер для доступа к storageDir
-    val storageDirectory: File
-        get() = storageDir
-
     // Метод для сохранения файлов
-    suspend fun storeFiles(uuid: String, files: Map<String, ByteArray>) {
+    fun storeFiles(uuid: String, files: Map<String, ByteArray>) {
         val uuidDir = File(storageDir, uuid)
         if (!uuidDir.exists()) {
             uuidDir.mkdirs()
@@ -37,7 +33,7 @@ class StorageService(private val storageDir: File) {
     }
 
     // Метод для получения файлов по UUID
-    suspend fun getFiles(uuid: String): List<File> {
+    fun getFiles(uuid: String): List<File> {
         val uuidDir = File(storageDir, uuid)
         return if (uuidDir.exists()) {
             uuidDir.listFiles()?.toList() ?: emptyList() // Возвращаем список файлов в директории UUID

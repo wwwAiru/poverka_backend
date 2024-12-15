@@ -1,0 +1,40 @@
+/* Общие стили для галереи */
+.gallery {
+    display: grid;
+    gap: 15px;
+    justify-items: center;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Для 2 колонок */
+.gallery-2 {
+    grid-template-columns: repeat(2, 1fr); /* Два столбца для мобильных */
+}
+
+/* Для 3 колонок */
+.gallery-3 {
+    grid-template-columns: repeat(3, 1fr); /* Три столбца для десктопов */
+}
+
+/* Адаптивное отображение для экранов до 600px */
+@media (max-width: 600px) {
+    .gallery {
+        grid-template-columns: repeat(2, 1fr); /* На мобильных всегда 2 колонки */
+    }
+
+    .gallery-item img {
+        width: 100%; /* Изображения занимают всю ширину */
+        border-radius: 10px; /* Скругление изображений */
+    }
+}
+
+/* Для устройств с разрешением до 480px */
+@media (max-width: 480px) {
+    .gallery {
+        grid-template-columns: repeat(2, 1fr); /* 2 колонки для маленьких экранов */
+        gap: 10px; /* Уменьшение промежутка между элементами */
+    }
+}

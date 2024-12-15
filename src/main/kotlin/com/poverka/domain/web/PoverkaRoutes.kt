@@ -1,43 +1,20 @@
 package com.poverka.domain.web
 
 import com.poverka.domain.services.PoverkaService
+import com.poverka.domain.services.StorageService
+import com.poverka.domain.utils.DeviceUtils
 import com.poverka.domain.web.routes.renderPoverkaPage
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.html.*
+import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
-fun Route.poverkaRoutes(poverkaService: PoverkaService) {
-
-    // Загрузка JSON
-    route("/upload/json") {
-        post {
-            try {
-                val jsonData = call.receiveText()
-                val jsonObject = Json.decodeFromString<JsonObject>(jsonData)
-                val uuid = jsonObject["uuid"]?.jsonPrimitive?.content
-
-                if (uuid.isNullOrEmpty()) {
-                    call.respond(HttpStatusCode.BadRequest, "UUID отсутствует в JSON.")
-                    return@post
-                }
-
-                poverkaService.saveJson(uuid, jsonData)
-                call.respond(HttpStatusCode.OK, "JSON успешно сохранён.")
-            } catch (e: Exception) {
-                call.application.log.error("Ошибка при сохранении JSON: ${e.message}", e)
-                call.respond(HttpStatusCode.InternalServerError, "Ошибка на сервере.")
-            }
-        }
-    }
+fun Route.poverkaRoutes(poverkaService: PoverkaService, storageService: StorageService) {
 
     // Загрузка фото
     route("/upload/photo") {
@@ -116,36 +93,30 @@ fun Route.poverkaRoutes(poverkaService: PoverkaService) {
         }
     }
 
-
-    // Получение файлов
+    // Получение страницы с фотографиями поверки
     get("/gallery/{uuid}") {
-        val uuid = call.parameters["uuid"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-        val files = poverkaService.getFilesForPoverka(uuid)
+        val uuid = call.parameters["uuid"] ?: return@get call.respondText("UUID not found", status = io.ktor.http.HttpStatusCode.NotFound)
+        val files = storageService.getFiles(uuid)
+        val userAgent = call.request.headers["User-Agent"]
+        val isMobile = DeviceUtils.isMobileDevice(userAgent)
 
-        if (files.isEmpty()) {
-            call.application.log.warn("Файлы для UUID $uuid не найдены.")
-            return@get call.respond(HttpStatusCode.NotFound, "Файлы не найдены.")
-        }
+        // Для мобильных 2 колонки, для других 3
+        val columnsClass = if (isMobile) "gallery-2" else "gallery-3"
 
-        val (thumbnails, originals) = files.partition { it.name.startsWith("thumb_") }
-
-        call.application.log.info("Thumbnails: ${thumbnails.map { it.name }}")
-        call.application.log.info("Originals: ${originals.map { it.name }}")
-
-        if (thumbnails.isEmpty() || originals.isEmpty()) {
-            call.application.log.warn("Тumbnails или Originals пустые.")
-        }
-
-        call.respondHtml(HttpStatusCode.OK) {
-            renderPoverkaPage(
-                uuid,
-                thumbnails.map { it.name },
-                originals.map { it.name }
-            )
+        call.respondHtml {
+            renderPoverkaPage(uuid, files, columnsClass)
         }
     }
+
+
+
+
+
 
     get("/ping") {
         call.respondText("OK", status = HttpStatusCode.OK)
     }
+
+    staticFiles("/static", File("src/main/resources/static"))
+    staticFiles("/uploads", File("uploads"))
 }
